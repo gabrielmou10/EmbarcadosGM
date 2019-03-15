@@ -127,7 +127,7 @@
 #define BUTNEXT_PIO_IDX		30
 #define BUTNEXT_PIO_IDX_MASK (1u << BUTNEXT_PIO_IDX)
 
-// Configurations of Button Play/Stop , PC30
+// Configurations of Button Play/Stop 
 
 #define BUTPS_PIO			PIOA
 #define BUTPS_PIO_ID		10
@@ -176,26 +176,20 @@ void init(void){
 	// Desativa WatchDog Timer
 	WDT->WDT_MR = WDT_MR_WDDIS;
 	
-	// Ativa o PIO na qual o LED foi conectado
-	// para que possamos controlar o LED.
+	// Ativa o PIO na qual o LED, o Buzzer e os botoes foram conectados
+	// para que possamos controlar eles.
 	pmc_enable_periph_clk(LED_PIO_ID);
-	// Inicializa o pino do led como saída.
-	pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 0, 0, 0);
-	
-	// Inicializa PIO do Buzzer
 	pmc_enable_periph_clk(BUTB_PIO_ID);
-	// Inicializa o pino do buzzer como saída.
+	pmc_enable_periph_clk(BUTNEXT_PIO_ID);
+	pmc_enable_periph_clk(BUTPS_PIO_ID);
+	
+	// Inicializa o pino do led e do buzzer como saídas.
+	pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 0, 0, 0);
 	pio_set_output(BUTB_PIO, BUTB_PIO_IDX_MASK, 0, 0, 0);
 	
-	// Inicializa PIO do Botão Next
-	pmc_enable_periph_clk(BUTNEXT_PIO_ID);
-	// Inicializa o pino do botão next como entrada com um pull-up.
+	// Inicializa o pino dos botoes next e play/stop como entradas com um pull-up.
 	pio_set_input(BUTNEXT_PIO_ID,BUTNEXT_PIO_IDX_MASK,PIO_DEFAULT);
 	pio_pull_up(BUTNEXT_PIO,BUTNEXT_PIO_IDX_MASK,1);
-	
-	// Inicializa PIO do Botão Play/Stop
-	pmc_enable_periph_clk(BUTPS_PIO_ID);
-	// Inicializa o pino do botão play/stop como entrada com um pull-up.
 	pio_set_input(BUTPS_PIO_ID,BUTPS_PIO_IDX_MASK,PIO_DEFAULT);
 	pio_pull_up(BUTNEXT_PIO,BUTNEXT_PIO_IDX_MASK,1);	
 }
@@ -309,8 +303,8 @@ int main(void){
 	  10, 10, 10,
 	  3, 3, 3
   };
-  void buzz (long frequency, long lenght){
-	pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED
+  void buzz (long frequency, long length){
+	pio_clear(PIOC, LED_PIO_IDX_MASK);    // Coloca 0 no pino do LED para liga-lo
 	long delayValue = 1000000 / frequency / 2;
 	long numCycles = frequency * length / 1000;	  
 	for (long i = 0; i < numCycles; i++) {
@@ -319,7 +313,7 @@ int main(void){
 		pio_clear(BUTB_PIO, BUTB_PIO_IDX_MASK);
 		delay_us(delayValue);	
 	}
-	pio_set(PIOC, LED_PIO_IDX_MASK); //liga o led de acordo com os toques
+	pio_set(PIOC, LED_PIO_IDX_MASK);
   }
   
   void play (int melody[], int tempo[], int size){
@@ -331,19 +325,18 @@ int main(void){
 		 int noteDuration = 1000 / tempo[thisNote];
 		 buzz(melody[thisNote], noteDuration);
 		 
-		 if(pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK)){ //se o botao de play for pressionado para a musica
+		 if(!(pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK))){ //se o botao de play for pressionado para a musica
+				buzz(0, noteDuration);
+				delay_s(1);
+				return;
 		 }
 		 
-		 else {
-			buzz(0, noteDuration);
-			delay_s(1);
-			return;
-		 }		 
+	 
 		 
 		 // to distinguish the notes, set a minimum time between them.
 		 // the note's duration + 30% seems to work well:
 		 int pauseBetweenNotes = noteDuration * 1.30;
-		 delay_us(pauseBetweenNotes);
+		 delay_ms(pauseBetweenNotes);
 		 
 		 // stop the tone playing:
 		 buzz(0, noteDuration); 
@@ -354,11 +347,10 @@ int main(void){
   // aplicacoes embarcadas não devem sair do while(1).
   while (1)
   {
-	if(pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK)){ // se o botão play é pressionado
-	}
-	else{
+	if(!pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK)){ // se o botão play é pressionado
+		delay_ms(15);
 		while(!(pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK))){
-			delay_us(12);
+			delay_ms(12);
 		}
 		if(song == 1){
 			int size = sizeof(melodymario) / sizeof(int);
@@ -370,9 +362,9 @@ int main(void){
 		}
 	}
 	
-	if(pio_get(BUTNEXT_PIO, PIO_INPUT, BUTNEXT_PIO_IDX_MASK)){ // se o botao de next for pressionado troca a musica
-	}
-	else{
+	if(!pio_get(BUTNEXT_PIO, PIO_INPUT, BUTNEXT_PIO_IDX_MASK)){ // se o botao de next for pressionado troca a musica
+	
+	
 		while(!(pio_get(BUTNEXT_PIO, PIO_INPUT, BUTNEXT_PIO_IDX_MASK)))
 		{
 			delay_ms(30);
