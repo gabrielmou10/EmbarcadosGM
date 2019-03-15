@@ -7,7 +7,8 @@
  **  - Gabriel Moura
  **  - Nicolas Stegmann
  ** 
- **  - url vídeo
+ ** Url vídeo: https://github.com/gabrielmou10/EmbarcadosGM
+ ** Referência: https://www.princetronics.com/supermariothemesong/
  **/
 
 #include "asf.h"
@@ -134,34 +135,7 @@
 #define BUTPS_PIO_IDX		4
 #define BUTPS_PIO_IDX_MASK (1u << BUTPS_PIO_IDX)
 
-/********/
-/* constants                                                            */
-/********/
 
-/********/
-/* variaveis globais                                                    */
-/********/
-
-/********/
-/* prototypes                                                           */
-/********/
-
-/********/
-/* interrupcoes                                                         */
-/********/
-
-/********/
-/* funcoes                                                              */
-/********/
-
-/**
- * \brief Set a high output level on all the PIOs defined in ul_mask.
- * This has no immediate effects on PIOs that are not output, but the PIO
- * controller will save the value if they are changed to outputs.
- *
- * \param p_pio Pointer to a PIO instance.
- * \param ul_mask Bitmask of one or more pin(s) to configure.
- */
 void _pio_set(Pio *p_pio, const uint32_t ul_mask)
 {
 
@@ -205,7 +179,7 @@ int main(void){
   
   init();
   
-	//mario music
+	// Mario Music
   int melodymario[] = {
 	  NOTE_E7, NOTE_E7, 0, NOTE_E7,
 	  0, NOTE_C7, NOTE_E7, 0,
@@ -308,37 +282,32 @@ int main(void){
 	long delayValue = 1000000 / frequency / 2;
 	long numCycles = frequency * length / 1000;	  
 	for (long i = 0; i < numCycles; i++) {
-		pio_set(BUTB_PIO, BUTB_PIO_IDX_MASK);
+		pio_set(BUTB_PIO, BUTB_PIO_IDX_MASK); // Coloca 1 no pino do Buzzer
 		delay_us(delayValue);		
-		pio_clear(BUTB_PIO, BUTB_PIO_IDX_MASK);
+		pio_clear(BUTB_PIO, BUTB_PIO_IDX_MASK); // Coloca 0 no pino do Buzzer
 		delay_us(delayValue);	
 	}
-	pio_set(PIOC, LED_PIO_IDX_MASK);
+	pio_set(PIOC, LED_PIO_IDX_MASK); // Coloca 1 no pino do LED para desliga-lo
   }
   
   void play (int melody[], int tempo[], int size){
 	 for (int thisNote = 0; thisNote < size; thisNote++) {
 		 
-		 // to calculate the note duration, take one second
-		 // divided by the note type.
+
+		 int noteDuration = 1000 / tempo[thisNote]; // duração da nota 
+		 buzz(melody[thisNote], noteDuration); // buzzer toca a nota
 		 
-		 int noteDuration = 1000 / tempo[thisNote];
-		 buzz(melody[thisNote], noteDuration);
-		 
-		 if(!(pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK))){ //se o botao de play for pressionado para a musica
+		 if(!(pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK))){ // se o botao de play for apertado para a musica
 				buzz(0, noteDuration);
 				delay_s(1);
 				return;
 		 }
 		 
-	 
-		 
-		 // to distinguish the notes, set a minimum time between them.
-		 // the note's duration + 30% seems to work well:
+		 // Para destinguir as notas, aumenta-se o delay em 30% do tempo da nota:
 		 int pauseBetweenNotes = noteDuration * 1.30;
 		 delay_ms(pauseBetweenNotes);
 		 
-		 // stop the tone playing:
+		 // Para de tocar a nota
 		 buzz(0, noteDuration); 
 	 }	  
   }
@@ -349,14 +318,14 @@ int main(void){
   {
 	if(!pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK)){ // se o botão play é pressionado
 		delay_ms(15);
-		while(!(pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK))){
+		while(!(pio_get(BUTPS_PIO, PIO_INPUT, BUTPS_PIO_IDX_MASK))){  
 			delay_ms(12);
 		}
-		if(song == 1){
+		if(song == 1){ // música 1 
 			int size = sizeof(melodymario) / sizeof(int);
 			play(melodymario, tempomario, size);
 		}
-		else if(song == 2){
+		else if(song == 2){ // música 2
 			int size = sizeof(melodyuw) / sizeof(int);
 			play(melodyuw, tempouw, size);
 		}
